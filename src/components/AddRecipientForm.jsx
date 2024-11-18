@@ -1,4 +1,3 @@
-// AddRecipientForm.jsx
 import React, { useState } from 'react';
 import './AddRecipientForm.css'
 
@@ -28,29 +27,15 @@ function AddRecipientForm({ onAdd }) {
         ],
       };
 
-      try {
-        const response = await fetch('https://yahia89.github.io/donations-hub/recipients', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(newRecipient),
-        });
+      // Mock API request: instead of making a real POST request, we just call onAdd to update local state
+      onAdd(newRecipient);
 
-        if (response.ok) {
-          onAdd(newRecipient);
-          // Clear the form fields
-          setName('');
-          setDonationDate('');
-          setDonationType('');
-          setDonationAmount('');
-          setNumDonations('');
-        } else {
-          console.error('Failed to add recipient');
-        }
-      } catch (error) {
-        console.error('Error:', error);
-      }
+      // Clear the form fields
+      setName('');
+      setDonationDate('');
+      setDonationType('');
+      setDonationAmount('');
+      setNumDonations('');
     }
   };
 
@@ -90,7 +75,7 @@ function AddRecipientForm({ onAdd }) {
       <input
         className="form-input"
         type="number"
-        placeholder="How many times recipient recieved donations?"
+        placeholder="How many times recipient received donations?"
         value={numDonations}
         onChange={(e) => setNumDonations(e.target.value)}
       />
