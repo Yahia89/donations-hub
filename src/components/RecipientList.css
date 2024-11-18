@@ -1,0 +1,110 @@
+body {
+    margin: 0;
+    background: linear-gradient(45deg, #49a09d, #5f2c82);
+    font-family: sans-serif;
+    font-weight: 100;
+    min-height: 100vh;
+    padding: 20px;
+    display: flex;
+    justify-content: center; /* Center content horizontally */
+    align-items: center; /* Center content vertically */
+    flex-direction: column; /* Ensure elements stack vertically */
+}
+
+/* Main container styles */
+.recipients-container {
+    max-width: 800px;    /* Restrict max-width */
+    /* width: 100%;         Makes it responsive */
+    min-width: 600px;    /* Minimum width */
+    margin: 20px auto;   /* Center container horizontally with some space */
+    padding: 0 20px;
+  }
+
+.recipients-table {
+    width: 100%;
+    border-collapse: collapse;
+    overflow: hidden;
+    /* box-shadow: 0 0 20px rgba(0,0,0,0.1); */
+    border-radius: 5px;
+}
+
+.recipients-table th,
+.recipients-table td {
+    padding: 15px;
+    background-color: rgba(255,255,255,0.2);
+    color: #fff;
+    position: relative;
+    transition: background-color 0.3s;
+}
+
+.recipients-table th {
+    text-align: center;
+}
+
+.recipients-table thead th {
+    background-color: #55608f;
+}
+
+/* Cross-shaped hover effect */
+.recipients-table tbody td:hover {
+    background-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Highlight entire row */
+.recipients-table tbody tr:hover td {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Highlight corresponding column header */
+.recipients-table tbody td:hover::after {
+    content: "";
+    position: absolute;
+    top: -100%; /* Cover the entire column above */
+    left: 0;
+    right: 0;
+    bottom: 100%; /* Offset to keep the cell content intact */
+    background-color: rgba(255, 255, 255, 0.3);
+    z-index: -1;
+}
+
+.recipients-table thead th:hover,
+.recipients-table thead th:focus {
+    background-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Responsive styles */
+@media screen and (max-width: 768px) {
+    .recipients-container {
+        padding: 0 10px;
+        width: unset;         /* Makes it responsive */
+        min-width: unset;    /* Minimum width */
+    }
+
+    .recipients-table thead {
+        display: none;
+    }
+
+    .recipients-table tbody tr {
+        display: block;
+        margin-bottom: 16px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+
+    .recipients-table td {
+        display: block;
+        text-align: right;
+        padding: 12px;
+        position: relative;
+        padding-left: 50%;
+    }
+
+    .recipients-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 10px;
+        width: calc(50% - 20px);
+        text-align: left;
+        font-weight: bold;
+    }
+}
