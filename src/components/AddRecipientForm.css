@@ -103,3 +103,12 @@
         padding: 0.6rem;
     }
 }
+
+
+input[type="date"] {
+    display: block;
+    -webkit-appearance: textfield; /* WebKit browsers (Safari, etc.) */
+    -moz-appearance: textfield;    /* Mozilla browsers (Firefox) */
+    appearance: textfield;         /* Standard property for other browsers */
+    min-height: 1.2em;
+}

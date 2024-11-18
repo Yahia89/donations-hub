@@ -16,7 +16,7 @@ function App() {
   // Fetch recipients from JSON file
   const fetchRecipients = async () => {
     try {
-      const response = await fetch('/recipients.json');
+      const response = await fetch('https://yahia89.github.io/donations-hub/recipients');
       const data = await response.json();
       setRecipients(data);
       setFilteredRecipients(data); // Ensure both states are initialized
@@ -34,7 +34,7 @@ function App() {
   const handleSearch = async (searchTerm) => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3001/search-recipients?name=${encodeURIComponent(searchTerm)}`);
+      const response = await fetch(`https://yahia89.github.io/donations-hub/search-recipients?name=${encodeURIComponent(searchTerm)}`);
       const data = await response.json();
       console.log('Filtered Results:', data); // Debug line to check filtered output
       setFilteredRecipients(data);

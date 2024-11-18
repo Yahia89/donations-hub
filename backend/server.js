@@ -5,10 +5,15 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const PORT = 3001;
-const dataPath = path.join(__dirname, 'recipients.json');
+const PORT = process.env.PORT || 3001; // Use process.env.PORT for deployments
+const dataPath = path.join(__dirname, 'backend', 'recipients.json'); // Ensure path is correct
 
-app.use(cors());
+// CORS configuration (only allowing your GitHub Pages domain)
+app.use(cors({
+  origin: 'https://yahia89.github.io', // Replace with your GitHub Pages URL
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(bodyParser.json());
 
 // Endpoint to get recipients data
@@ -42,11 +47,7 @@ app.post('/recipients', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
-
-
+// Search recipients endpoint
 app.get('/search-recipients', (req, res) => {
   const { name } = req.query;
   fs.readFile(dataPath, 'utf8', (err, data) => {
@@ -62,8 +63,12 @@ app.get('/search-recipients', (req, res) => {
       );
     }
 
-    // Ensure a valid JSON response
     res.setHeader('Content-Type', 'application/json');
     res.json(recipients);
   });
+});
+
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
 });

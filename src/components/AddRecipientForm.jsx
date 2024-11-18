@@ -29,7 +29,7 @@ function AddRecipientForm({ onAdd }) {
       };
 
       try {
-        const response = await fetch('http://localhost:3001/recipients', {
+        const response = await fetch('https://yahia89.github.io/donations-hub/recipients', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
