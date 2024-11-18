@@ -10,7 +10,7 @@ const dataPath = path.join(__dirname, 'backend', 'recipients.json'); // Ensure p
 
 // CORS configuration (only allowing your GitHub Pages domain)
 app.use(cors({
-  origin: 'https://yahia89.github.io', // Replace with your GitHub Pages URL
+  origin: ['http://localhost:3000', 'https://yahia89.github.io'], // Add both localhost and production domains
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));

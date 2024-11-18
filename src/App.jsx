@@ -8,6 +8,8 @@ function App() {
   const [filteredRecipients, setFilteredRecipients] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  
+
   // Load initial data
   useEffect(() => {
     fetchRecipients();
@@ -16,14 +18,15 @@ function App() {
   // Fetch recipients from JSON file
   const fetchRecipients = async () => {
     try {
-      const response = await fetch('https://yahia89.github.io/donations-hub/recipients');
+      const response = await fetch('https://raw.githubusercontent.com/yourusername/yourrepo/main/data/recipients.json');
       const data = await response.json();
       setRecipients(data);
-      setFilteredRecipients(data); // Ensure both states are initialized
+      setFilteredRecipients(data);
     } catch (error) {
       console.error('Error loading recipients:', error);
     }
   };
+  
 
   const handleAddRecipient = (newRecipient) => {
     const updatedRecipients = [...recipients, newRecipient];
@@ -31,19 +34,15 @@ function App() {
     setFilteredRecipients(updatedRecipients); // Update filtered list
   };
 
-  const handleSearch = async (searchTerm) => {
+  const handleSearch = (searchTerm) => {
     setLoading(true);
-    try {
-      const response = await fetch(`https://yahia89.github.io/donations-hub/search-recipients?name=${encodeURIComponent(searchTerm)}`);
-      const data = await response.json();
-      console.log('Filtered Results:', data); // Debug line to check filtered output
-      setFilteredRecipients(data);
-      console.log('Updated filteredRecipients:', data); // Check if state is being updated
-    } catch (error) {
-      console.error('Error searching recipients:', error);
-    }
+    const filtered = recipients.filter((recipient) =>
+      recipient.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredRecipients(filtered);
     setLoading(false);
   };
+  
 
   const handleClearResults = () => {
     setFilteredRecipients(recipients); // Reset to the full list
