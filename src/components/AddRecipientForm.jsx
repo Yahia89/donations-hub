@@ -1,42 +1,63 @@
 import React, { useState } from 'react';
-import './AddRecipientForm.css'
+import { recipientService } from '../services/recipientService';
+import './AddRecipientForm.css';
 
-function AddRecipientForm({ onAdd }) {
-  const [name, setName] = useState('');
-  const [donationDate, setDonationDate] = useState('');
-  const [donationType, setDonationType] = useState('');
-  const [donationAmount, setDonationAmount] = useState('');
-  const [numDonations, setNumDonations] = useState('');
+function AddRecipientForm() {
+  const [formData, setFormData] = useState({
+    name: '',
+    donation_date: '',
+    donation_type: '',
+    donation_amount: '',
+    donations_count: 0,
+    status: 'active',
+    contact_info: ''
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (name && donationDate && donationType) {
-      const newRecipient = {
-        id: Date.now(),
-        name,
-        donationDate,
-        donationType,
-        donationAmount: donationAmount || 'N/A',
-        numDonations: numDonations || 0,
-        donations: [
-          {
-            type: donationType,
-            date: donationDate,
-            amount: donationAmount || 'N/A',
-          },
-        ],
-      };
-
-      // Mock API request: instead of making a real POST request, we just call onAdd to update local state
-      onAdd(newRecipient);
-
-      // Clear the form fields
-      setName('');
-      setDonationDate('');
-      setDonationType('');
-      setDonationAmount('');
-      setNumDonations('');
+    
+    // Prepare recipient data with donations
+    const recipientData = {
+      ...formData,
+      donations_count: Number(formData.donations_count), // Ensure it's a number
+      donation_amount: formData.donation_amount || 'N/A', // Handle donation amount
+      donations: [{
+        type: formData.donation_type,
+        date: formData.donation_date,
+        amount: formData.donation_amount || 'N/A' // Add fallback for empty donation amount
+      }]
+    };
+  
+    try {
+      console.log('Adding recipient data:', recipientData);  // Debugging line
+  
+      // Insert recipient data into Supabase
+await recipientService.addRecipient(recipientData);
+      
+      // Clear form
+      setFormData({
+        name: '',
+        donation_date: '',
+        donation_type: '',
+        donation_amount: '',
+        donations_count: 0,
+        status: 'active',
+        contact_info: ''
+      });
+      
+      alert('Recipient added successfully!');
+    } catch (error) {
+      console.error('Error adding recipient:', error);
+      alert('Failed to add recipient');
     }
+  };
+  
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
   return (
@@ -44,46 +65,59 @@ function AddRecipientForm({ onAdd }) {
       <input
         className="form-input"
         type="text"
+        name="name"
         placeholder="Recipient Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
+        value={formData.name}
+        onChange={handleChange}
         required
+      />
+      <input
+        className="form-input"
+        type="text"
+        name="contact_info"
+        placeholder="Contact Information"
+        value={formData.contact_info}
+        onChange={handleChange}
       />
       <input
         className="form-input"
         type="date"
+        name="donation_date"
         placeholder="Date of Donation"
-        value={donationDate}
-        onChange={(e) => setDonationDate(e.target.value)}
+        value={formData.donation_date}
+        onChange={handleChange}
         required
       />
       <input
         className="form-input"
         type="text"
+        name="donation_type"
         placeholder="Type of Donation"
-        value={donationType}
-        onChange={(e) => setDonationType(e.target.value)}
+        value={formData.donation_type}
+        onChange={handleChange}
         required
       />
       <input
         className="form-input"
         type="text"
+        name="donation_amount"
         placeholder="Donation Amount (worth) in $"
-        value={donationAmount}
-        onChange={(e) => setDonationAmount(e.target.value)}
+        value={formData.donation_amount}
+        onChange={handleChange}
       />
       <input
         className="form-input"
         type="number"
+        name="donations_count"
         placeholder="How many times recipient received donations?"
-        value={numDonations}
-        onChange={(e) => setNumDonations(e.target.value)}
+        value={formData.donations_count}
+        onChange={handleChange}
       />
       <button className="form-button" type="submit">
         Add Recipient
       </button>
     </form>
   );
-}  
+}
 
 export default AddRecipientForm;
