@@ -12,18 +12,28 @@ const LogIn = () => {
     setLoading(true);
 
     try {
+      const redirectURL =
+        process.env.NODE_ENV === "development"
+          ? "http://localhost:5173"
+          : "https://yahia89.github.io/donations-hub/";
+
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: window.location.origin
+          emailRedirectTo: redirectURL,
         }
       });
 
-      if (error) throw error;
-      
-      setMessage('Check your email for the magic link!');
+      if (error) {
+        if (error.message === 'Signups not allowed for this instance') {
+          throw new Error('No user found or no matching email found. Please contact admin to register.');
+        }
+        throw error;
+      }
+
+      setMessage('If this email is registered, you will receive a login link.');
     } catch (error) {
-      setMessage('Error: ' + error.message);
+      setMessage(error.message);
       console.error('Error:', error);
     }
 
@@ -32,12 +42,12 @@ const LogIn = () => {
 
   return (
     <div className="login-container">
-      <p className='welcome' >Welcome to Donations Hub</p>
+      <p className='welcome'>Welcome to Donations Hub</p>
       <p>Enter your email to receive a magic link for secure login</p>
 
       <form onSubmit={handleLogin}>
         <input
-        className='login-input'
+          className='login-input'
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -47,10 +57,12 @@ const LogIn = () => {
         <button type="submit" disabled={loading}>
           {loading ? 'Sending...' : 'Send Magic Link'}
         </button>
-        <p style={{marginTop:"50px"}} >If you are registred you will recieve a log in link, when you click on it you will be able to log in</p>
-        <p style={{marginTop:"50px"}}>
+        <p style={{ marginTop: "50px" }}>
+          If you are registered, you will receive a login link. Click on it to log in.
+        </p>
+        <p style={{ marginTop: "50px" }}>
           Please contact <a 
-            href="mailto:info@techdevprime" 
+            href="mailto:info@techdevprime.com"
             style={{
               color: 'darkgray',
               textDecoration: 'underline',
@@ -59,7 +71,7 @@ const LogIn = () => {
             }}
           >
             admin
-          </a> for comments, concerns & any suggestions
+          </a> for comments, concerns & any suggestions.
         </p>
       </form>
 
