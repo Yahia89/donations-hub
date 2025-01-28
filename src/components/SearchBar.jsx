@@ -1,29 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import './SearchBar.css';
 
-const SearchBar = ({ onSearch, onClearResults, loading }) => {
-  const [inputValue, setInputValue] = useState('');
-
-  const handleInputChange = (e) => {
-    setInputValue(e.target.value);
-  };
-
-  const handleSearchClick = () => {
-    if (inputValue.trim() !== '') {
-      onSearch(inputValue);
-    }
-  };
-
-  const handleClearClick = () => {
-    setInputValue('');
-    if (onClearResults) {
-      onClearResults(); // Notify the parent component to clear search results
-    }
-  };
-
+const SearchBar = ({ searchTerm, setSearchTerm, onSearch, onClearResults, loading }) => {
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && inputValue.trim() !== '') {
-      onSearch(inputValue);
+    if (e.key === 'Enter' && searchTerm.trim() !== '') {
+      onSearch();
     }
   };
 
@@ -33,24 +14,24 @@ const SearchBar = ({ onSearch, onClearResults, loading }) => {
         <input
           type="text"
           className="search-input"
-          value={inputValue}
-          onChange={handleInputChange}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
           onKeyDown={handleKeyPress}
           placeholder="Search..."
         />
         <div className="button-group">
-          {inputValue ? (
+          {searchTerm && (
             <button
               className="clear-button"
-              onClick={handleClearClick}
+              onClick={onClearResults}
               title="Clear"
             >
               Clear
             </button>
-          ) : null}
+          )}
           <button
             className="search-button"
-            onClick={handleSearchClick}
+            onClick={onSearch}
             title="Search"
           >
             Search

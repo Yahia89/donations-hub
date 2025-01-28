@@ -1,50 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import AddRecipientForm from './components/AddRecipientForm';
-import RecipientsList from './components/RecipientList';
-import SearchBar from './components/SearchBar';
-import AddRecipient from './components/AddRecipient';
-import { recipientService } from './services/recipientService';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { supabase } from './lib/supabase';
+import LogIn from './components/LogIn';
+import Home from './components/Home';
 
 function App() {
-  const [recipients, setRecipients] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [searchInitiated, setSearchInitiated] = useState(false);
+  const [session, setSession] = useState(null);
 
-  const handleSearch = async (searchTerm) => {
-    try {
-      setLoading(true);
-      setSearchInitiated(true);
-      
-      const { data, error } = await recipientService.searchRecipients(searchTerm);
-      if (error) throw error;
-      
-      setRecipients(data || []);
-    } catch (error) {
-      console.error('Error searching recipients:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
 
-  const handleClearResults = () => {
-    setSearchInitiated(false);
-    setRecipients([]);
-  };
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
-    <div className="app-container">
-      <h1 className="app-title">Donation Hub</h1>
-      <SearchBar 
-        onSearch={handleSearch} 
-        onClearResults={handleClearResults} 
-        loading={loading} 
-      />
-      <AddRecipientForm />
-      <RecipientsList 
-        recipients={recipients} 
-        message={searchInitiated ? "No results found" : "Start searching"}
-      />
-    </div>
+    <BrowserRouter basename="/donations-hub">
+      <Routes>
+        <Route 
+          path="/" 
+          element={!session ? <LogIn /> : <Navigate to="/home" />} 
+        />
+        <Route 
+          path="/home" 
+          element={session ? <Home /> : <Navigate to="/" />} 
+        />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

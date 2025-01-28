@@ -46,3 +46,5 @@ export function RecipientsList() {
     </div>
   )
 }
+
+export default RecipientsList

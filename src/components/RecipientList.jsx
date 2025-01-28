@@ -1,7 +1,7 @@
 import React from 'react';
 import './RecipientList.css';
 
-function RecipientsList({ recipients, message }) {
+function RecipientsList({ recipients = [], message }) {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString();
@@ -10,10 +10,10 @@ function RecipientsList({ recipients, message }) {
   return (
     <div className="recipients-container">
       <h2 className="recipients-title">Donation Recipients</h2>
-      {recipients.length === 0 && message && (
+      {(!recipients || recipients.length === 0) && message && (
         <p className="no-recipients-message">{message}</p>
       )}
-      {recipients.length > 0 && (
+      {recipients && recipients.length > 0 && (
         <div className="table-wrapper">
           <table className="recipients-table">
             <thead>
