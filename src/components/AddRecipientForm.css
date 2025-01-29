@@ -105,10 +105,51 @@
 }
 
 
+/* Add these styles for date input */
 input[type="date"] {
-    display: block;
-    -webkit-appearance: textfield; /* WebKit browsers (Safari, etc.) */
-    -moz-appearance: textfield;    /* Mozilla browsers (Firefox) */
-    appearance: textfield;         /* Standard property for other browsers */
-    min-height: 1.2em;
+  -webkit-appearance: none;
+  display: block;
+  padding: 1rem;
+  background-color: #1b0f0f;
+  color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  font-size: 16px; /* Prevents zoom on iOS */
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1); /* Makes the calendar icon white */
+  opacity: 0.8;
+  cursor: pointer;
+}
+
+/* Ensure proper display on iOS */
+@supports (-webkit-touch-callout: none) {
+  input[type="date"] {
+    min-height: 44px; /* iOS minimum touch target size */
+  }
+}
+.marital-status-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: #1b0f0f;
+  box-shadow: 0 0 4px rgba(100, 108, 255, 0.3);
+  align-items: center;
+}
+
+.radio-group {
+  display: flex;
+  gap: 20px;
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #fff;
+}
+
+.radio-group input[type="radio"] {
+  margin: 0;
 }
