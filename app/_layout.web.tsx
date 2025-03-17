@@ -12,12 +12,15 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      <Stack screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: '#fff' },
-      }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="login" />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: '#fff' },
+        }}
+        initialRouteName="(tabs)"
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="login" options={{ headerShown: false }} />
       </Stack>
     </>
   );
