@@ -46,11 +46,18 @@ const createMemoryStorage = () => {
 const authConfig = {
   autoRefreshToken: true,
   persistSession: true,
-  detectSessionInUrl: false,
+  detectSessionInUrl: Platform.OS === 'web',
   storage: createMemoryStorage(),
   storageKey: 'supabase-auth-token',
 };
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: authConfig,
+  global: {
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Accept-Profile': 'public'
+    }
+  }
 });

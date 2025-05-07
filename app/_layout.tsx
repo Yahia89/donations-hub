@@ -29,6 +29,14 @@ export default function RootLayout() {
       }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="login" />
+        <Stack.Screen 
+          name="recipient/[id]" 
+          options={{ 
+            headerShown: true,
+            headerTitle: "Recipient Details",
+            headerBackTitle: "Back"
+          }} 
+        />
       </Stack>
     </>
   );

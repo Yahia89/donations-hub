@@ -22,10 +22,31 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "publicPath": "/donations-hub/",
+      "build": {
+        "babel": {
+          "include": ["@expo/vector-icons"]
+        }
+      },
+      "fonts": [
+        "./assets/fonts/Ionicons.ttf",
+        "./assets/fonts/MaterialIcons.ttf",
+        "./assets/fonts/MaterialCommunityIcons.ttf",
+        {
+          "asset": "./assets/fonts/MaterialIcons.ttf",
+          "family": "Material Icons"
+        },
+        {
+          "asset": "./assets/fonts/MaterialCommunityIcons.ttf",
+          "family": "Material Design Icons"
+        }
+      ]
     },
     "plugins": [
-      "expo-router",
+      ["expo-router", {
+        "origin": "https://yahia89.github.io"
+      }],
       [
         "expo-splash-screen",
         {
@@ -38,7 +59,7 @@
     ],
     "experiments": {
       "typedRoutes": true,
-       "baseUrl": "/donations-hub"
+      "baseUrl": "/donations-hub"
     }
   }
 }

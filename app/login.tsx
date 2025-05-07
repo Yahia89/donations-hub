@@ -7,10 +7,18 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import * as QueryParams from "expo-auth-session/build/QueryParams";
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 WebBrowser.maybeCompleteAuthSession();
-// Update the redirectTo logic
-const redirectTo = makeRedirectUri();
+
+const isDevelopment = Constants.appOwnership === 'expo' || __DEV__;
+
+const redirectTo = Platform.select({
+  web: isDevelopment 
+    ? 'http://localhost:8081' 
+    : 'https://yahia89.github.io/donations-hub',
+  default: makeRedirectUri()
+});
 
 export default function Login() {
   const [email, setEmail] = useState('');
