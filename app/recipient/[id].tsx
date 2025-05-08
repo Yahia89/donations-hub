@@ -48,7 +48,7 @@ export default function RecipientDetails() {
       if (!data) {
         throw new Error('Recipient not found');
       }
-      setRecipient(data);
+      setRecipient(data as Recipient);
     } catch (err: any) {
       setError(err.message);
       Alert.alert('Error', err.message);

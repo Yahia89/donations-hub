@@ -31,6 +31,9 @@ type Recipient = {
   status: string;
   center_id: string;
   center_name?: string;
+  added_by?: {
+    display_name: string;
+  };
 };
 
 function highlightText(text: string, query: string): JSX.Element {
@@ -179,6 +182,9 @@ export default function Search() {
             Center: <Text style={styles.value}>{item.center_name || 'N/A'}</Text>
           </Text>
         )}
+        <Text style={styles.label}>
+          Added by: <Text style={styles.value}>{item.added_by?.display_name || 'Unknown'}</Text>
+        </Text>
         <Text style={styles.label}>
           Date: <Text style={styles.value}>{new Date(item.date).toLocaleDateString()}</Text>
         </Text>

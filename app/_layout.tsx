@@ -1,24 +1,36 @@
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'react-native';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../utils/supabase';
+import { Session } from '@supabase/supabase-js';
 
 export default function RootLayout() {
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
+    // Initialize session check
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         router.replace('/login');
       }
+      setIsLoading(false);
     });
 
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
+      if (event === 'SIGNED_OUT' || !session) {
         router.replace('/login');
+      } else if (event === 'SIGNED_IN' && session) {
+        router.replace('/(tabs)');
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  if (isLoading) {
+    return null; // Or a loading spinner
+  }
 
   return (
     <>

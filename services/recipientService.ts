@@ -18,6 +18,9 @@ interface Recipient {
   created_at?: string;
   centers?: { name: string };
   center_name?: string;
+  added_by?: {
+    display_name: string;
+  };
 }
 
 interface CenterAccess {
@@ -127,8 +130,11 @@ export const recipientService = {
           status,
           center_id,
           created_at,
-          centers (
+          centers!center_id (
             name
+          ),
+          added_by:admins!added_by_admin_id (
+            display_name
           )
         `, { count: 'exact' })
         .or(
@@ -163,6 +169,7 @@ export const recipientService = {
     recipientData: Omit<Recipient, 'center_id' | 'id' | 'created_at' | 'center_name'>
   ): Promise<Recipient> {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
       const { centerId } = await this.getCurrentUserCenter();
 
       // Enhanced validation
@@ -198,6 +205,7 @@ export const recipientService = {
         .insert([{
           ...sanitizedData,
           center_id: centerId,
+          added_by_admin_id: user?.id, // Add this line
           status: recipientData.status || 'active',
           created_at: new Date().toISOString()
         }])
@@ -205,6 +213,9 @@ export const recipientService = {
           *,
           centers (
             name
+          ),
+          admins!added_by_admin_id (
+            display_name
           )
         `)
         .single();
@@ -371,9 +382,23 @@ export const recipientService = {
       let query = supabase
         .from('recipients')
         .select(`
-          *,
+          id,
+          name,
+          date,
+          address,
+          phone_number,
+          driver_license,
+          marital_status,
+          zakat_requests,
+          notes,
+          status,
+          center_id,
+          created_at,
           centers (
             name
+          ),
+          added_by:admins!added_by_admin_id (
+            display_name
           )
         `, { count: 'exact' })
         .order('created_at', { ascending: false })

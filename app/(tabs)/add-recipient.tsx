@@ -70,13 +70,46 @@ const AddRecipient: React.FC = () => {
     if (!formData.zakat_requests || parseInt(formData.zakat_requests) < 1) {
       newErrors.zakat_requests = 'Must be at least 1';
     }
-    if (formData.phone_number && !/^\+?[\d\s-]{7,}$/.test(formData.phone_number)) {
-      newErrors.phone_number = 'Invalid phone number format';
+    // Updated phone validation to match international format
+    if (formData.phone_number && !/^\+?[1-9]\d{1,14}$/.test(formData.phone_number.replace(/[\s-]/g, ''))) {
+      newErrors.phone_number = 'Please enter a valid phone number';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }, [formData]);
+
+  const formatPhoneNumber = (text: string) => {
+    // Remove all non-numeric characters except + at the start
+    let cleaned = text.replace(/[^\d+]/g, '');
+    if (cleaned.startsWith('+')) {
+      // Keep the + and format the rest
+      cleaned = '+' + cleaned.substring(1).replace(/\D/g, '');
+    } else {
+      cleaned = cleaned.replace(/\D/g, '');
+    }
+    
+    // Format the number with spaces
+    if (cleaned.startsWith('+')) {
+      // International format
+      if (cleaned.length > 3) {
+        cleaned = cleaned.slice(0, 3) + ' ' + cleaned.slice(3);
+      }
+      if (cleaned.length > 7) {
+        cleaned = cleaned.slice(0, 7) + ' ' + cleaned.slice(7);
+      }
+    } else {
+      // Local format
+      if (cleaned.length > 3) {
+        cleaned = cleaned.slice(0, 3) + ' ' + cleaned.slice(3);
+      }
+      if (cleaned.length > 7) {
+        cleaned = cleaned.slice(0, 7) + ' ' + cleaned.slice(7);
+      }
+    }
+    
+    return cleaned;
+  };
 
   const handleSubmit = useCallback(async () => {
     if (!validateForm()) return;
@@ -205,7 +238,7 @@ const AddRecipient: React.FC = () => {
                   mode="date"
                   display={Platform.OS === 'ios' ? 'inline' : 'default'}
                   onChange={handleDateChange}
-                  maximumDate={new Date()}
+                  // Removed maximumDate to allow past dates
                 />
               )}
               {errors.date && <Text style={styles.errorText}>{errors.date}</Text>}
@@ -218,8 +251,16 @@ const AddRecipient: React.FC = () => {
               autoCapitalize: 'sentences',
             })}
             {renderInput('phone_number', 'Phone Number', {
-              placeholder: 'Enter phone number',
+              placeholder: 'Enter phone number (e.g. +1 234 5678)',
               keyboardType: 'phone-pad',
+              value: formData.phone_number,
+              onChangeText: (text) => {
+                const formatted = formatPhoneNumber(text);
+                setFormData(prev => ({ ...prev, phone_number: formatted }));
+                if (errors.phone_number) {
+                  setErrors(prev => ({ ...prev, phone_number: undefined }));
+                }
+              }
             })}
             {renderInput('driver_license', 'Driver License Number', {
               placeholder: 'Enter driver license number',

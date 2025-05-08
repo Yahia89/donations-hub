@@ -1,7 +1,8 @@
-import { Text, View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { Text, View, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '../../utils/supabase';
 import { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function Index() {
   const [userInfo, setUserInfo] = useState<{
@@ -56,19 +57,12 @@ export default function Index() {
     }
   };
 
-  const handleManageCenters = () => {
-    if (userInfo.role === 'app_admin') {
-      router.push('/centers');
-    }
-  };
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         {userInfo.displayName && (
           <Text style={styles.userInfo}>
             Welcome, {userInfo.displayName}
-            {userInfo.centerName && ` (${userInfo.centerName})`}
           </Text>
         )}
         
@@ -80,26 +74,33 @@ export default function Index() {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.title}>Welcome to Donations Hub</Text>
-      <Text style={styles.subtitle}>
-        Track and manage donations efficiently
-      </Text>
-      
-      <View style={styles.buttonContainer}>
-        {userInfo.role === 'app_admin' && (
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={handleManageCenters}
-          >
-            <Text style={styles.actionButtonText}>Manage Centers</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <View style={styles.content}>
+        <Image 
+          source={require('../../assets/images/favicon.png')}
+          style={styles.favicon}
+          resizeMode="contain"
+          accessibilityLabel="Donations Hub Logo"
+        />
 
-      <Text style={styles.description}>
-        Your central platform for monitoring and managing donations distributed to people in need.
-        Use the dashboard to view detailed records and ensure transparent donation tracking.
-      </Text>
+        <Text style={styles.title}>Welcome to Donations Hub</Text>
+        <Text style={styles.subtitle}>
+          Track and manage donations efficiently
+        </Text>
+
+        {userInfo.centerName && (
+          <View style={styles.centerInfo}>
+            <Ionicons name="business" size={24} color="#4CAF50" />
+            <Text style={styles.centerText}>
+              Associated Center: {userInfo.centerName}
+            </Text>
+          </View>
+        )}
+
+        <Text style={styles.description}>
+          Your central platform for monitoring and managing donations distributed to people in need.
+          Use the dashboard to view detailed records and ensure transparent donation tracking.
+        </Text>
+      </View>
     </View>
   );
 }
@@ -187,5 +188,78 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  content: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    maxWidth: 600,
+    paddingHorizontal: 20,
+  },
+  iconContainer: {
+    marginBottom: 40,
+    alignItems: 'center',
+  },
+  heartGraphContainer: {
+    position: 'relative',
+    width: 120,
+    height: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  graphLine: {
+    position: 'absolute',
+    width: '100%',
+    height: 3,
+    backgroundColor: '#fff',
+    bottom: 30,
+    transform: [{ 
+      rotate: '20deg'
+    }],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  centerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    padding: 16,
+    borderRadius: 12,
+    marginVertical: 20,
+    gap: 8,
+  },
+  centerText: {
+    fontSize: 16,
+    color: '#25292e',
+    fontWeight: '500',
+  },
+  // Update existing styles
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#25292e',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 18,
+    color: '#4CAF50',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  description: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
+    maxWidth: 600,
+  },
+  favicon: {
+    width: 120,
+    height: 120,
+    marginBottom: 40,
   },
 });

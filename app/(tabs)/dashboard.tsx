@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Text,
   View,
@@ -10,16 +10,26 @@ import {
   Pressable,
   Keyboard,
   RefreshControl,
-  Platform
+  Platform,
+  ScrollView,
+  useWindowDimensions,
+  Dimensions
 } from 'react-native';
 import { DatePickerModal } from 'react-native-paper-dates';
 import { enGB, registerTranslation } from 'react-native-paper-dates';
 import { Provider as PaperProvider, MD2DarkTheme, Menu } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { recipientService } from '../../services/recipientService';
-import { BarChart } from 'react-native-chart-kit';
-import { Dimensions } from 'react-native';
-import { router } from 'expo-router';
+import { LineChart,
+  BarChart,
+  PieChart,
+  ProgressChart,
+  ContributionGraph,
+  StackedBarChart
+ } from 'react-native-chart-kit';
+import { router, useFocusEffect } from 'expo-router';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
 
 registerTranslation('en-GB', enGB);
 
@@ -40,13 +50,14 @@ interface DateRange {
 
 type SortOption = 'name' | 'date' | 'zakat_requests' | 'status';
 
-const screenWidth = Dimensions.get('window').width;
+
 
 export default function Dashboard() {
   const [range, setRange] = useState<DateRange>({
     startDate: new Date(new Date().setDate(new Date().getDate() - 30)),
     endDate: new Date(),
   });
+  const screenWidth = Dimensions.get('window').width;
   const [open, setOpen] = useState(false);
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [loading, setLoading] = useState(false);
@@ -61,6 +72,83 @@ export default function Dashboard() {
   });
   const [sortOption, setSortOption] = useState<SortOption>('date');
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
+  const { width: windowWidth } = useWindowDimensions();
+  const chartWidth = Math.max(windowWidth - 32, 240);
+
+  // Add this function after your existing state declarations
+const handleExport = async () => {
+  try {
+    // Create CSV content
+    const headers = ['Name', 'Date', 'Status', 'Zakat Requests', 'Marital Status', 'Center'];
+    const rows = recipients.map(r => [
+      r.name,
+      new Date(r.date).toLocaleDateString(),
+      r.status,
+      r.zakat_requests.toString(),
+      r.marital_status,
+      r.center_name || 'N/A'
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+
+    // Add summary at the top
+    const summary = [
+      `Donations Hub Report`,
+      `Period: ${range.startDate?.toLocaleDateString()} - ${range.endDate?.toLocaleDateString()}`,
+      `Total Recipients: ${stats.total}`,
+      `Active Recipients: ${stats.active}`,
+      `Total Zakat Requests: ${stats.zakatRequests}`,
+      '\n'
+    ].join('\n');
+
+    const fileContent = summary + csvContent;
+
+    if (Platform.OS === 'web') {
+      // For web platform, use Blob and download
+      const blob = new Blob([fileContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const date = new Date().toISOString().split('T')[0];
+      
+      link.href = url;
+      link.download = `donations-report-${date}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } else {
+      // For native platforms, use FileSystem and Sharing
+      const date = new Date().toISOString().split('T')[0];
+      const filePath = `${FileSystem.documentDirectory}donations-report-${date}.csv`;
+      
+      await FileSystem.writeAsStringAsync(filePath, fileContent);
+      await Sharing.shareAsync(filePath, {
+        mimeType: 'text/csv',
+        dialogTitle: 'Export Donations Report',
+        UTI: 'public.comma-separated-values-text'
+      });
+    }
+  } catch (error) {
+    console.error('Export failed:', error);
+    Alert.alert('Export Failed', 'Failed to generate report. Please try again.');
+  }
+};
+
+  const chartConfig = {
+    backgroundColor: '#fff',
+    backgroundGradientFrom: '#fff',
+    backgroundGradientTo: '#fff',
+    decimalPlaces: 0,
+    color: (opacity: any) => `rgba(37, 41, 46, ${opacity})`,
+    labelColor: (opacity: any) => `rgba(102, 102, 102, ${opacity})`,
+    style: { borderRadius: 12 },
+    barPercentage: 0.3,
+    fillShadowGradient: '#25292e',
+    fillShadowGradientOpacity: 0.2,
+  };
 
   const onDismiss = useCallback(() => {
     setOpen(false);
@@ -113,7 +201,7 @@ export default function Dashboard() {
           }
         });
 
-        setRecipients(newRecipients);
+        setRecipients(newRecipients as Recipient[]);
         setHasMore(data.length === 20);
 
         // Calculate stats
@@ -135,9 +223,15 @@ export default function Dashboard() {
     [range, recipients, sortOption]
   );
 
-  useEffect(() => {
-    fetchRecipients();
-  }, [range, sortOption]);
+  // Replace the existing useEffect with useFocusEffect
+  useFocusEffect(
+    useCallback(() => {
+      // Only fetch if we don't have recipients yet
+      if (recipients.length === 0) {
+        fetchRecipients();
+      }
+    }, [range, sortOption])
+  );
 
   const handleLoadMore = () => {
     if (!loading && hasMore) {
@@ -230,11 +324,32 @@ export default function Dashboard() {
 
   return (
     <PaperProvider theme={MD2DarkTheme}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title} accessibilityRole="header">
-            Recipient Dashboard
-          </Text>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          colors={['#25292e']}
+          tintColor="#25292e"
+        />
+      }
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ flexGrow: 1 }}
+    >
+       {/* Header & Sort Menu */}
+       <View style={styles.header}>
+          <Text style={styles.title}>Recipient Dashboard</Text>
+          <View style={styles.headerActions}>
+    <TouchableOpacity
+      style={styles.exportButton}
+      onPress={handleExport}
+      accessibilityLabel="Export data"
+    >
+      <Ionicons name="download-outline" size={20} color="#25292e" />
+      <Text style={styles.exportButtonText}>Export</Text>
+    </TouchableOpacity>
+          </View>
           <Menu
             visible={sortMenuVisible}
             onDismiss={() => setSortMenuVisible(false)}
@@ -242,8 +357,6 @@ export default function Dashboard() {
               <TouchableOpacity
                 style={styles.sortButton}
                 onPress={() => setSortMenuVisible(true)}
-                accessibilityRole="button"
-                accessibilityLabel="Sort options"
               >
                 <Ionicons name="funnel-outline" size={20} color="#25292e" />
                 <Text style={styles.sortButtonText}>
@@ -255,22 +368,30 @@ export default function Dashboard() {
             <Menu.Item
               onPress={() => handleSortSelect('name')}
               title="Name"
-              leadingIcon="sort-alphabetical"
+              leadingIcon={({ size, color }) => (
+                <Ionicons name="map" size={size} color={color} />
+              )}
             />
             <Menu.Item
               onPress={() => handleSortSelect('date')}
               title="Date"
-              leadingIcon="sort-calendar"
+              leadingIcon={({ size, color }) => (
+                <Ionicons name="calendar-outline" size={size} color={color} />
+              )}
             />
             <Menu.Item
               onPress={() => handleSortSelect('zakat_requests')}
               title="Zakat Requests"
-              leadingIcon="sort-numeric"
+              leadingIcon={({ size, color }) => (
+                <Ionicons name="ticket-outline" size={size} color={color} />
+              )}
             />
             <Menu.Item
               onPress={() => handleSortSelect('status')}
               title="Status"
-              leadingIcon="sort"
+              leadingIcon={({ size, color }) => (
+                <Ionicons name="sparkles-outline" size={size} color={color} />
+              )}
             />
           </Menu>
         </View>
@@ -330,7 +451,11 @@ export default function Dashboard() {
           onDismiss={onDismiss}
           startDate={range.startDate}
           endDate={range.endDate}
-          onConfirm={onConfirm}
+          onConfirm={({ startDate, endDate }) => {
+            if (startDate && endDate) {
+              onConfirm({ startDate: new Date(startDate), endDate: new Date(endDate) });
+            }
+          }}
           theme={{
             ...MD2DarkTheme,
             colors: {
@@ -349,31 +474,14 @@ export default function Dashboard() {
             <Text style={styles.chartTitle}>Recipient Statistics</Text>
             <BarChart
               data={chartData}
-              width={screenWidth - 32}
+              width={chartWidth}
               height={240}
-              yAxisLabel=""
-              chartConfig={{
-                backgroundColor: '#fff',
-                backgroundGradientFrom: '#fff',
-                backgroundGradientTo: '#fff',
-                decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(37, 41, 46, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(102, 102, 102, ${opacity})`,
-                style: {
-                  borderRadius: 16,
-                },
-                propsForBars: {
-                  strokeWidth: '2',
-                  stroke: '#25292e',
-                },
-                barPercentage: 0.3,
-                fillShadowGradient: '#25292e',
-                fillShadowGradientOpacity: 0.2,
-              }}
+              chartConfig={chartConfig}
               style={styles.chart}
-              withCustomBarColorFromData
+              fromZero
               showValuesOnTopOfBars
               withInnerLines={false}
+              withCustomBarColorFromData
             />
           </View>
         )}
@@ -393,50 +501,46 @@ export default function Dashboard() {
             accessibilityLabel="Loading recipients"
           />
         ) : (
-          <FlatList
-            data={recipients}
-            renderItem={renderRecipientItem}
-            keyExtractor={item => item.id}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText} accessibilityLiveRegion="polite">
-                  No recipients found in selected range
-                </Text>
-                <TouchableOpacity
-                  style={styles.retryButton}
-                  onPress={handleSearch}
-                  accessibilityRole="button"
-                  accessibilityLabel="Retry search"
-                >
-                  <Text style={styles.retryButtonText}>Retry</Text>
-                </TouchableOpacity>
-              </View>
-            }
-            contentContainerStyle={styles.list}
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.5}
-            ListFooterComponent={
-              loading && recipients.length > 0 ? (
-                <ActivityIndicator
-                  size="small"
-                  color="#25292e"
-                  style={styles.footerLoader}
-                />
-              ) : null
-            }
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                colors={['#25292e']}
-                tintColor="#25292e"
-              />
-            }
-          />
+          <View style={styles.listContainer}>
+            <FlatList
+              data={recipients}
+              renderItem={renderRecipientItem}
+              keyExtractor={item => item.id}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText} accessibilityLiveRegion="polite">
+                    No recipients found in selected range
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.retryButton}
+                    onPress={handleSearch}
+                    accessibilityRole="button"
+                    accessibilityLabel="Retry search"
+                  >
+                    <Text style={styles.retryButtonText}>Retry</Text>
+                  </TouchableOpacity>
+                </View>
+              }
+              contentContainerStyle={styles.list}
+              onEndReached={handleLoadMore}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={
+                loading && recipients.length > 0 ? (
+                  <ActivityIndicator
+                    size="small"
+                    color="#25292e"
+                    style={styles.footerLoader}
+                  />
+                ) : null
+              }
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              scrollEnabled={false} // Disable FlatList scrolling
+              nestedScrollEnabled={true}
+            />
+          </View>
         )}
-      </View>
+      </ScrollView>
     </PaperProvider>
   );
 }
@@ -723,9 +827,40 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     flexGrow: 1,
   },
+  listContainer: {
+    flex: 1,
+  },
   cardPressed: {
     backgroundColor: '#f8f8f8',
     transform: [{ scale: 0.98 }],
     borderColor: '#ddd',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  exportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 8,
+    borderRadius: 8,
+    gap: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  exportButtonText: {
+    fontSize: 14,
+    color: '#25292e',
   },
 });
