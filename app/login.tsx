@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image, Animated } from 'react-native';
 import { supabase } from '../utils/supabase';
 import { Link, router } from 'expo-router';
 import { makeRedirectUri } from 'expo-auth-session';
@@ -23,6 +23,25 @@ const redirectTo = Platform.select({
 export default function Login() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+
+  // Logo animation on component mount
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      })
+    ]).start();
+  }, []);
 
   const createSessionFromUrl = async (url: string) => {
     try {
@@ -109,7 +128,25 @@ export default function Login() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.welcome}>Welcome to Donations Hub</Text>
+      <View style={styles.logoContainer}>
+        <Animated.View
+          style={[
+            styles.logoWrapper,
+            {
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }]
+            }
+          ]}
+        >
+          <Image
+            source={require('../assets/images/DonationsHub-icon-appstore-1024-trimmed.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </Animated.View>
+      </View>
+      
+      <Text style={styles.welcome}>Welcome to Zakat Hub</Text>
       <Text style={styles.subtitle}>Enter your email to receive a magic link for secure login</Text>
 
       <View style={styles.formContainer}>
@@ -154,6 +191,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 20,
     justifyContent: 'center',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logoWrapper: {
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    borderRadius: 20,
   },
   welcome: {
     fontSize: 24,

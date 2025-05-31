@@ -1,14 +1,53 @@
-import { Text, View, StyleSheet, Linking, TouchableOpacity, Platform } from 'react-native';
+import { Text, View, StyleSheet, Linking, TouchableOpacity, Platform, Image, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useState, useEffect, useRef } from 'react';
 
 export default function AboutScreen() {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+
+  // Logo animation on component mount
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      })
+    ]).start();
+  }, []);
+
   const handleContactPress = () => {
     Linking.openURL('mailto:info@techdevprime.com');
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>About Donations Hub</Text>
+      <View style={styles.logoContainer}>
+        <Animated.View
+          style={[
+            styles.logoWrapper,
+            {
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }]
+            }
+          ]}
+        >
+          <Image
+            source={require('../../assets/images/DonationsHub-icon-appstore-1024-trimmed.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </Animated.View>
+      </View>
+      
+      <Text style={styles.title}>About Zakat Hub</Text>
       
       <View style={styles.content}>
         <Text style={styles.description}>
@@ -41,6 +80,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
     padding: 20,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  logoWrapper: {
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    borderRadius: 16,
   },
   title: {
     fontSize: 24,
