@@ -13,7 +13,6 @@ interface Recipient {
   marital_status: 'single' | 'married';
   zakat_requests: number;
   notes?: string;
-  status: 'active' | 'inactive';
   center_id: string;
   created_at?: string;
   centers?: { name: string };
@@ -169,66 +168,14 @@ export const recipientService = {
     recipientData: Omit<Recipient, 'center_id' | 'id' | 'created_at' | 'center_name'>
   ): Promise<Recipient> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { centerId } = await this.getCurrentUserCenter();
+      const { data, error } = await supabase.functions.invoke('add-recipient', {
+        body: recipientData
+      })
 
-      // Enhanced validation
-      const errors: string[] = [];
-      if (!recipientData.name?.trim()) errors.push('Name is required');
-      if (!recipientData.date?.trim()) errors.push('Date is required');
-      if (!recipientData.marital_status || !['single', 'married'].includes(recipientData.marital_status)) {
-        errors.push('Valid marital status is required');
-      }
-      if (typeof recipientData.zakat_requests !== 'number' || recipientData.zakat_requests < 0) {
-        errors.push('Zakat requests must be a non-negative number');
-      }
-      if (recipientData.phone_number && !/^\+?[\d\s-]{7,}$/.test(recipientData.phone_number)) {
-        errors.push('Invalid phone number format');
-      }
-      if (recipientData.status && !['active', 'inactive'].includes(recipientData.status)) {
-        errors.push('Invalid status');
-      }
-      if (errors.length > 0) throw new Error(errors.join('; '));
-
-      // Sanitize inputs
-      const sanitizedData = {
-        ...recipientData,
-        name: sanitizeInput(recipientData.name),
-        address: recipientData.address ? sanitizeInput(recipientData.address) : undefined,
-        phone_number: recipientData.phone_number ? sanitizeInput(recipientData.phone_number) : undefined,
-        driver_license: recipientData.driver_license ? sanitizeInput(recipientData.driver_license) : undefined,
-        notes: recipientData.notes ? sanitizeInput(recipientData.notes) : undefined,
-      };
-
-      const { data, error } = await supabase
-        .from('recipients')
-        .insert([{
-          ...sanitizedData,
-          center_id: centerId,
-          added_by_admin_id: user?.id, // Add this line
-          status: recipientData.status || 'active',
-          created_at: new Date().toISOString()
-        }])
-        .select(`
-          *,
-          centers (
-            name
-          ),
-          admins!added_by_admin_id (
-            display_name
-          )
-        `)
-        .single();
-
-      if (error) throw handleServiceError(error, 'Failed to add recipient');
-      if (!data) throw new Error('No data returned after adding recipient');
-
-      return {
-        ...data,
-        center_name: data.centers?.name
-      };
+      if (error) throw error
+      return data
     } catch (error) {
-      throw handleServiceError(error, 'addRecipient');
+      throw handleServiceError(error, 'addRecipient')
     }
   },
 
@@ -331,12 +278,38 @@ export const recipientService = {
     try {
       const { centerId, isAdmin } = await this.getCurrentUserCenter();
       const { limit = 50, page = 1 } = options;
-
+  
       // Validate dates
       if (!/^\d{4}-\d{2}-\d{2}/.test(startDate) || !/^\d{4}-\d{2}-\d{2}/.test(endDate)) {
         throw new Error('Invalid date format');
       }
-
+  
+      // Validate pagination parameters
+      const validPage = Math.max(1, page);
+      const validLimit = Math.max(1, Math.min(limit, 100)); // Cap at 100
+      const startIndex = (validPage - 1) * validLimit;
+      const endIndex = startIndex + validLimit - 1;
+  
+      // First, get the count to check if there are any results
+      let countQuery = supabase
+        .from('recipients')
+        .select('*', { count: 'exact', head: true })
+        .gte('date', startDate)
+        .lte('date', endDate);
+  
+      if (!isAdmin) {
+        countQuery = countQuery.eq('center_id', centerId);
+      }
+  
+      const { count, error: countError } = await countQuery;
+      if (countError) throw handleServiceError(countError, 'Failed to count recipients');
+  
+      // If no results, return empty array
+      if (!count || count === 0) {
+        return [];
+      }
+  
+      // Now fetch the actual data with pagination
       let query = supabase
         .from('recipients')
         .select(`
@@ -344,19 +317,24 @@ export const recipientService = {
           centers (
             name
           )
-        `, { count: 'exact' })
+        `)
         .gte('date', startDate)
         .lte('date', endDate)
-        .order('date', { ascending: false })
-        .range((page - 1) * limit, page * limit - 1);
-
+        .order('date', { ascending: false });
+  
+      // Only apply range if we have results and valid pagination
+      if (count > 0 && startIndex < count) {
+        const safeEndIndex = Math.min(endIndex, count - 1);
+        query = query.range(startIndex, safeEndIndex);
+      }
+  
       if (!isAdmin) {
         query = query.eq('center_id', centerId);
       }
-
+  
       const { data, error } = await query;
       if (error) throw handleServiceError(error, 'Failed to fetch recipients by date range');
-
+  
       return (data || []).map(item => ({
         ...item,
         center_name: item.centers?.name

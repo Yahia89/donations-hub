@@ -177,13 +177,16 @@ const handleExport = async () => {
       else setLoading(true);
       setError(null);
       try {
+        // Reset pagination on refresh or new search
+        const pageToUse = isRefresh ? 1 : newPage;
+        
         const data = await recipientService.getRecipientsByDateRange(
           range.startDate.toISOString().split('T')[0],
           range.endDate.toISOString().split('T')[0],
-          { page: newPage, limit: 20 }
+          { page: pageToUse, limit: 20 }
         );
-
-        let newRecipients = append ? [...recipients, ...data] : data;
+    
+        let newRecipients = append && !isRefresh ? [...recipients, ...data] : data;
         
         // Apply sorting
         newRecipients = [...newRecipients].sort((a, b) => {
@@ -200,10 +203,15 @@ const handleExport = async () => {
               return 0;
           }
         });
-
+    
         setRecipients(newRecipients as Recipient[]);
         setHasMore(data.length === 20);
-
+        
+        // Update page state
+        if (isRefresh) {
+          setPage(1);
+        }
+    
         // Calculate stats
         const activeCount = newRecipients.filter(r => r.status === 'active').length;
         const zakatTotal = newRecipients.reduce((sum, r) => sum + r.zakat_requests, 0);
@@ -213,8 +221,12 @@ const handleExport = async () => {
           zakatRequests: zakatTotal,
         });
       } catch (err: any) {
+        console.error('Fetch error:', err);
         setError(err.message);
-        Alert.alert('Error', err.message);
+        // Don't show alert on refresh to avoid annoying the user
+        if (!isRefresh) {
+          Alert.alert('Error', err.message);
+        }
       } finally {
         setLoading(false);
         if (isRefresh) setRefreshing(false);

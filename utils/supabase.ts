@@ -14,7 +14,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
 const customStorage = {
   setItem: async (key: string, value: string) => {
     try {
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      if (Platform.OS === 'web') {
+        if (typeof window === 'undefined') return; // Handle SSR
         window.localStorage.setItem(key, value);
       } else {
         await AsyncStorage.setItem(key, value);
@@ -25,7 +26,8 @@ const customStorage = {
   },
   getItem: async (key: string) => {
     try {
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      if (Platform.OS === 'web') {
+        if (typeof window === 'undefined') return null; // Handle SSR
         return window.localStorage.getItem(key);
       }
       return await AsyncStorage.getItem(key);
@@ -36,7 +38,8 @@ const customStorage = {
   },
   removeItem: async (key: string) => {
     try {
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      if (Platform.OS === 'web') {
+        if (typeof window === 'undefined') return; // Handle SSR
         window.localStorage.removeItem(key);
       } else {
         await AsyncStorage.removeItem(key);

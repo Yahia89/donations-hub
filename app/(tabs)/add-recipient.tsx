@@ -26,7 +26,6 @@ interface FormData {
   marital_status: 'single' | 'married' | '';
   zakat_requests: string;
   notes: string;
-  status: 'active' | 'inactive';
 }
 
 const AddRecipient: React.FC = () => {
@@ -42,8 +41,7 @@ const AddRecipient: React.FC = () => {
     driver_license: '',
     marital_status: '',
     zakat_requests: '1',
-    notes: '',
-    status: 'active',
+    notes: ''
   });
 
   const resetForm = useCallback(() => {
@@ -55,8 +53,7 @@ const AddRecipient: React.FC = () => {
       driver_license: '',
       marital_status: '',
       zakat_requests: '1',
-      notes: '',
-      status: 'active',
+      notes: ''
     });
     setErrors({});
   }, []);
@@ -70,46 +67,33 @@ const AddRecipient: React.FC = () => {
     if (!formData.zakat_requests || parseInt(formData.zakat_requests) < 1) {
       newErrors.zakat_requests = 'Must be at least 1';
     }
-    // Updated phone validation to match international format
-    if (formData.phone_number && !/^\+?[1-9]\d{1,14}$/.test(formData.phone_number.replace(/[\s-]/g, ''))) {
-      newErrors.phone_number = 'Please enter a valid phone number';
+    // Validate phone number format (XXX) XXX-XXXX
+    if (formData.phone_number && !/^\(\d{3}\) \d{3}-\d{4}$/.test(formData.phone_number)) {
+      newErrors.phone_number = 'Please enter a valid phone number in format (XXX) XXX-XXXX';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }, [formData]);
 
-  const formatPhoneNumber = (text: string) => {
-    // Remove all non-numeric characters except + at the start
-    let cleaned = text.replace(/[^\d+]/g, '');
-    if (cleaned.startsWith('+')) {
-      // Keep the + and format the rest
-      cleaned = '+' + cleaned.substring(1).replace(/\D/g, '');
-    } else {
-      cleaned = cleaned.replace(/\D/g, '');
-    }
+  // Add this function at the top level of your component file, before the AddRecipient component
+  const formatPhoneNumber = (input: string): string => {
+    // Remove all non-digit characters
+    const cleaned = input.replace(/\D/g, '');
     
-    // Format the number with spaces
-    if (cleaned.startsWith('+')) {
-      // International format
-      if (cleaned.length > 3) {
-        cleaned = cleaned.slice(0, 3) + ' ' + cleaned.slice(3);
-      }
-      if (cleaned.length > 7) {
-        cleaned = cleaned.slice(0, 7) + ' ' + cleaned.slice(7);
-      }
-    } else {
-      // Local format
-      if (cleaned.length > 3) {
-        cleaned = cleaned.slice(0, 3) + ' ' + cleaned.slice(3);
-      }
-      if (cleaned.length > 7) {
-        cleaned = cleaned.slice(0, 7) + ' ' + cleaned.slice(7);
-      }
-    }
+    // Limit to 10 digits
+    const truncated = cleaned.slice(0, 10);
     
-    return cleaned;
-  };
+    // Format as (XXX) XXX-XXXX
+    if (truncated.length >= 6) {
+      return `(${truncated.slice(0, 3)}) ${truncated.slice(3, 6)}-${truncated.slice(6)}`;
+    } else if (truncated.length >= 3) {
+      return `(${truncated.slice(0, 3)}) ${truncated.slice(3)}`;
+    } else if (truncated.length > 0) {
+      return `(${truncated}`;
+    }
+    return '';
+  }
 
   const handleSubmit = useCallback(async () => {
     if (!validateForm()) return;
@@ -124,8 +108,7 @@ const AddRecipient: React.FC = () => {
         driver_license: formData.driver_license?.trim() || undefined,
         marital_status: formData.marital_status as 'single' | 'married',
         zakat_requests: parseInt(formData.zakat_requests, 10),
-        notes: formData.notes?.trim() || undefined,
-        status: formData.status,
+        notes: formData.notes?.trim() || undefined
       };
 
       await recipientService.addRecipient(newRecipient);
@@ -251,7 +234,7 @@ const AddRecipient: React.FC = () => {
               autoCapitalize: 'sentences',
             })}
             {renderInput('phone_number', 'Phone Number', {
-              placeholder: 'Enter phone number (e.g. +1 234 5678)',
+              placeholder: 'Enter phone number (XXX) XXX-XXXX',
               keyboardType: 'phone-pad',
               value: formData.phone_number,
               onChangeText: (text) => {

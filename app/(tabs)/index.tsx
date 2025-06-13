@@ -21,27 +21,44 @@ export default function Index() {
     const getUserInfo = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.email) {
-        // Get admin's role and center information
-        const { data: adminCenter } = await supabase
-          .from('admin_centers')
-          .select(`
-            role,
-            centers (
-              name
-            ),
-            admins!inner (
-              display_name
-            )
-          `)
-          .eq('admin_id', user.id)
+        // First, get admin information
+        const { data: admin } = await supabase
+          .from('admins')
+          .select('display_name')
+          .eq('id', user.id)
           .single();
-        
-        setUserInfo({
-          email: user.email,
-          displayName: adminCenter?.admins?.display_name || null,
-          role: adminCenter?.role || null,
-          centerName: adminCenter?.centers?.name || null
-        });
+
+        // Check if user has app_admin role (global admin)
+        const isAppAdmin = user.app_metadata?.role === 'app_admin';
+
+        if (isAppAdmin) {
+          // For app_admin users, they have access to all centers
+          setUserInfo({
+            email: user.email,
+            displayName: admin?.display_name || null,
+            role: 'app_admin',
+            centerName: 'All Centers (Global Admin)'
+          });
+        } else {
+          // For regular admins, get their specific center
+          const { data: adminCenter } = await supabase
+            .from('admin_centers')
+            .select(`
+              role,
+              centers (
+                name
+              )
+            `)
+            .eq('admin_id', user.id)
+            .single();
+          
+          setUserInfo({
+            email: user.email,
+            displayName: admin?.display_name || null,
+            role: adminCenter?.role || null,
+            centerName: adminCenter?.centers?.name || null
+          });
+        }
       }
     };
     getUserInfo();
